@@ -1,0 +1,16 @@
+plugins {
+    id 'io.nextflow.nextflow-plugin' version '1.0.0-beta.10'
+}
+
+version = '0.1.0'
+
+nextflowPlugin {
+    nextflowVersion = '25.10.0'
+
+    provider = 'pinin4fjords'
+    className = 'io.nfmetro.plugin.MetroPlugin'
+    extensionPoints = [
+        'io.nfmetro.plugin.MetroObserverFactory',
+        'io.nfmetro.plugin.MetroConfig'
+    ]
+}
