@@ -56,6 +56,15 @@ Mode is selected by config (the `metro` scope). One observer, three behaviours:
 
 Precedence when more than one is set: central > attach > managed.
 
+When to use which:
+
+- **managed** - a one-off local run: nothing to start or stop, the plugin
+  spawns a single-map server for the run and tears it down at the end.
+- **attach** - a single-map server you keep running yourself while iterating
+  (one stable URL, reset on each re-run), or any server already up.
+- **central** - many pipelines or a history of runs on one shared dashboard
+  (a lab or CI box running `nf-metro serve-multi`); each run is its own entry.
+
 ### Config options (`metro` scope)
 
 | Option         | Mode      | Default        | Meaning                                                        |
