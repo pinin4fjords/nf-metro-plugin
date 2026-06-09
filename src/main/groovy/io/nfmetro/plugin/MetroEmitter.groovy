@@ -65,7 +65,7 @@ class MetroEmitter {
             if (token)
                 conn.setRequestProperty('X-Metro-Token', token)
             conn.outputStream.withWriter('UTF-8') { it.write(body) }
-            conn.responseCode
+            conn.responseCode  // read to force the request to be sent
         }
         catch (Throwable t) {
             log.debug("nf-metro: event POST failed: ${t.message}")

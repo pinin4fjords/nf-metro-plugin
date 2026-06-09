@@ -97,10 +97,6 @@ class MetroObserver implements TraceObserverV2 {
                     if (config.open)
                         server.openBrowser()
                 }
-                else if (config.url) {
-                    emitter = new MetroEmitter(config.url, config.token)
-                    announce("managed server failed; streaming to ${config.url}")
-                }
                 else {
                     server = null
                     announce("managed server failed to start; live map disabled (see .nextflow.log)")

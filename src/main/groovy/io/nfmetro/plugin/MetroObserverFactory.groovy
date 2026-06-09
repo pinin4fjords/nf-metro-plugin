@@ -36,8 +36,14 @@ class MetroObserverFactory implements TraceObserverFactoryV2 {
         final bin = nav(session, 'metro.binary')
         if (bin) c.binary = bin
 
+        // Fail soft on a non-numeric metro.port: a bad value must not break the run.
         final portObj = navObj(session, 'metro.port')
-        c.port = (portObj != null ? (portObj as String).toInteger() : 0)
+        try {
+            c.port = (portObj != null ? (portObj as String).toInteger() : 0)
+        }
+        catch (Throwable ignored) {
+            c.port = 0
+        }
 
         // Managed mode needs a concrete port and (optionally) an auto-token.
         if (c.managed) {
