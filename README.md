@@ -154,8 +154,22 @@ NXF_PLUGINS_DEV=/path/to/nf-metro-plugin nextflow run ... \
 
 ### End-to-end validation
 
-The `validation/` directory holds the demo workflow for both modes
+The `validation/` directory holds the demo workflow for all three modes
 (the workflow only `sleep`s, ~50s, 8 processes, no containers).
+
+Central mode (shared dashboard - the recommended demo):
+
+```bash
+# shell 1: one persistent server, no map, hosts every run that reports in
+nf-metro serve-multi --port 8080
+# open the index at http://localhost:8080/
+
+# shell 2 (and 3, 4...): run any pipeline; it registers its map and reports in
+cd validation/central
+METRO_SERVER=http://localhost:8080 METRO_MAP=/path/to/pipeline.mmd nextflow run main.nf
+# the run prints "registered on ...; live map: http://localhost:8080/r/<id>/"
+# the dashboard at / lists every run with a live status; the server stays up
+```
 
 Attach mode:
 
