@@ -81,27 +81,35 @@ class MetroObserver implements TraceObserverV2 {
                 server = new MetroServerManager(config.binary, config.map, config.port, config.token)
                 if (server.start()) {
                     emitter = new MetroEmitter(server.eventsUrl, config.token)
-                    log.info("nf-metro live map: ${server.baseUrl}")
+                    announce("live map: ${server.baseUrl}")
                     if (config.open)
                         server.openBrowser()
                 }
                 else if (config.url) {
                     emitter = new MetroEmitter(config.url, config.token)
-                    log.info("nf-metro: managed server failed; attaching to ${config.url}")
+                    announce("managed server failed; streaming to ${config.url}")
                 }
                 else {
                     server = null
+                    announce("managed server failed to start; live map disabled (see .nextflow.log)")
                 }
             }
             else if (config.url) {
                 emitter = new MetroEmitter(config.url, config.token)
-                log.info("nf-metro: emitting events to ${config.url}")
+                announce("streaming progress to ${config.url}")
             }
         }
         catch (Throwable t) {
             log.warn("nf-metro: initialisation failed (${t.message}); live map disabled.")
             emitter = null
         }
+    }
+
+    /** Surface a one-line notice on the console (stdout) and in the log. */
+    private static void announce(String msg) {
+        log.info("nf-metro: ${msg}")
+        System.out.println("  ▶ nf-metro ${msg}")
+        System.out.flush()
     }
 
     @Override
