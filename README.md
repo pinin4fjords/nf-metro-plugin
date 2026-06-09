@@ -25,6 +25,24 @@ weblog events POSTed to `/events`. It exposes:
 This plugin POSTs events in the stock Nextflow `-with-weblog` shape, so the
 Python server runs unchanged.
 
+## Why use the plugin?
+
+You don't have to: nf-metro works with plain Nextflow `-with-weblog`, and the
+shared dashboard can be driven by a `curl` to `/maps` plus a per-run
+`-with-weblog` URL. The plugin emits the same events - it's a convenience layer
+that moves the wiring into config and handles the server lifecycle for you.
+
+| Task | Without the plugin (`-with-weblog`) | With the plugin |
+|------|--------------------------------------|-----------------|
+| Wiring | `-with-weblog <url>` on every run | One `plugins { id 'nf-metro' }` + a `metro {}` block in `nextflow.config` |
+| Run the server | Start `nf-metro serve` yourself in another shell | **Managed mode** spawns and stops it for the run (and can open the browser) |
+| Shared dashboard | `curl` the map to `/maps`, read the run id, then point `-with-weblog` at `/r/<id>/events` | **Central mode** registers the map and wires the per-run endpoint automatically |
+| Find the map | construct the URL yourself | prints the live URL in the run log |
+
+It's worth it when you want the integration to live in the pipeline's config,
+the server started and stopped for you, or runs to self-register on a shared
+dashboard (the register-then-emit step is awkward by hand).
+
 ## Three modes
 
 Mode is selected by config (the `metro` scope). One observer, three behaviours:
