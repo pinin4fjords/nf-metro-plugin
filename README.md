@@ -25,33 +25,44 @@ weblog events POSTed to `/events`. It exposes:
 This plugin POSTs events in the stock Nextflow `-with-weblog` shape, so the
 Python server runs unchanged.
 
-## Two modes
+## Three modes
 
-Mode is selected by config (the `metro` scope). One observer, two behaviours:
+Mode is selected by config (the `metro` scope). One observer, three behaviours:
 
-| Mode    | Trigger                          | Behaviour                                                        |
-|---------|----------------------------------|-----------------------------------------------------------------|
-| attach  | `metro.url` set                  | POST events to an existing server's `/events` URL.              |
-| managed | `metro.map` set (and no `url`)   | Spawn `nf-metro serve <map>` itself, POST to it, stop it at end.|
-| no-op   | neither set                      | Log a warning and do nothing. The run is unaffected.            |
+| Mode    | Trigger                              | Behaviour                                                        |
+|---------|--------------------------------------|------------------------------------------------------------------|
+| central | `metro.server` + `metro.map` set     | Register the map on a persistent `nf-metro serve-multi` server and stream to the run's endpoint. |
+| attach  | `metro.url` set (and no `server`)    | POST events to an existing single-map server's `/events` URL.    |
+| managed | `metro.map` set (no `server`/`url`)  | Spawn `nf-metro serve <map>` itself, POST to it, stop it at end.  |
+| no-op   | none set                             | Log a warning and do nothing. The run is unaffected.             |
 
-If both `metro.url` and `metro.map` are set, `url` wins (attach).
+Precedence when more than one is set: central > attach > managed.
 
 ### Config options (`metro` scope)
 
-| Option         | Mode     | Default        | Meaning                                                        |
-|----------------|----------|----------------|----------------------------------------------------------------|
-| `metro.url`    | attach   | -              | `/events` URL of an already-running server.                    |
-| `metro.map`    | managed  | -              | Path to the `.mmd` map; the plugin starts/stops the server.    |
-| `metro.port`   | managed  | a free port    | Port for the spawned server.                                   |
-| `metro.token`  | both     | auto (managed) | Auth token. In managed mode one is auto-generated if unset.    |
-| `metro.open`   | managed  | `false`        | Open the live map in the default browser at start.             |
-| `metro.binary` | managed  | `nf-metro`     | Path/name of the nf-metro executable to spawn.                 |
+| Option         | Mode      | Default        | Meaning                                                        |
+|----------------|-----------|----------------|----------------------------------------------------------------|
+| `metro.server` | central   | -              | Base URL of a persistent `serve-multi` server to register on.  |
+| `metro.url`    | attach    | -              | `/events` URL of an already-running single-map server.         |
+| `metro.map`    | central/managed | -        | Path to the `.mmd` map (registered on the server, or served).  |
+| `metro.port`   | managed   | a free port    | Port for the spawned server.                                   |
+| `metro.token`  | all       | auto (managed) | Auth token. In managed mode one is auto-generated if unset.    |
+| `metro.open`   | managed   | `false`        | Open the live map in the default browser at start.             |
+| `metro.binary` | managed   | `nf-metro`     | Path/name of the nf-metro executable to spawn.                 |
 
 Example configs:
 
 ```groovy
-// attach to an existing server
+// central: report into a shared, long-lived dashboard (nf-metro serve-multi)
+plugins { id 'nf-metro@0.1.0' }
+metro {
+    server = 'http://metro.lab.internal:8080'
+    map    = '/path/to/pipeline.mmd'
+}
+```
+
+```groovy
+// attach to an existing single-map server
 plugins { id 'nf-metro@0.1.0' }
 metro { url = 'http://localhost:8090/events' }
 ```

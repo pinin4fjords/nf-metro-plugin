@@ -29,6 +29,7 @@ class MetroObserverFactory implements TraceObserverFactoryV2 {
     static MetroConfig readConfig(Session session) {
         final c = new MetroConfig()
         c.url = nav(session, 'metro.url')
+        c.server = nav(session, 'metro.server')
         c.map = nav(session, 'metro.map')
         c.token = nav(session, 'metro.token')
         c.open = (navObj(session, 'metro.open') as Boolean)

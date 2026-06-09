@@ -14,9 +14,11 @@ import nextflow.script.dsl.Description
  * the single source of truth for the option names.
  *
  * Mode selection:
- *  - {@code url} set      -> attach mode (POST to an existing server)
- *  - else {@code map} set -> managed mode (the plugin spawns the server)
- *  - else                 -> no-op
+ *  - {@code server} + {@code map} -> central mode (register the map on a
+ *    persistent server and stream to the run's endpoint)
+ *  - else {@code url}             -> attach mode (POST to an existing server)
+ *  - else {@code map}            -> managed mode (the plugin spawns the server)
+ *  - else                        -> no-op
  *
  *     metro {
  *         map  = 'assets/metro_map.mmd'   // managed mode
@@ -32,7 +34,11 @@ class MetroConfig implements ConfigScope {
     String url = ''
 
     @ConfigOption
-    @Description('Path to the metro-map .mmd; the plugin starts and stops the server itself (managed mode)')
+    @Description('Base URL of a persistent nf-metro serve-multi server (central mode); the run registers its map there')
+    String server = ''
+
+    @ConfigOption
+    @Description('Path to the metro-map .mmd; used by managed mode (spawn a server) and central mode (register on the server)')
     String map = ''
 
     @ConfigOption
@@ -55,6 +61,7 @@ class MetroConfig implements ConfigScope {
 
     MetroConfig(Map opts) {
         this.url = (opts.url ?: '') as String
+        this.server = (opts.server ?: '') as String
         this.map = (opts.map ?: '') as String
         this.port = (opts.port ?: 0) as int
         this.token = (opts.token ?: '') as String
@@ -62,7 +69,8 @@ class MetroConfig implements ConfigScope {
         this.binary = (opts.binary ?: 'nf-metro') as String
     }
 
-    boolean isAttach() { url as Boolean }
-    boolean isManaged() { !url && (map as Boolean) }
-    boolean isActive() { attach || managed }
+    boolean isCentral() { (server as Boolean) && (map as Boolean) }
+    boolean isAttach() { !central && (url as Boolean) }
+    boolean isManaged() { !central && !url && (map as Boolean) }
+    boolean isActive() { central || attach || managed }
 }

@@ -10,7 +10,9 @@ import nextflow.trace.event.TaskEvent
 /**
  * Emits weblog-compatible task events to an nf-metro live server.
  *
- * Two modes, selected by config (see {@link MetroObserverFactory}):
+ * Three modes, selected by config (see {@link MetroObserverFactory}):
+ *  - central: register {@code metro.map} on a persistent {@code metro.server}
+ *    and stream to the run's endpoint
  *  - attach:  POST to an existing server given by {@code metro.url}
  *  - managed: spawn {@code <binary> serve <map>} and POST to it
  *
@@ -77,7 +79,17 @@ class MetroObserver implements TraceObserverV2 {
     void onFlowCreate(Session session) {
         this.session = session
         try {
-            if (config.managed) {
+            if (config.central) {
+                final reg = registerOnServer(config.server, config.map, safeRunName(), config.token)
+                if (reg != null) {
+                    emitter = new MetroEmitter(joinUrl(config.server, (String) reg.get('events')), config.token)
+                    announce("registered on ${config.server}; live map: ${joinUrl(config.server, (String) reg.get('view'))}")
+                }
+                else {
+                    announce("could not register map on ${config.server}; live map disabled (see .nextflow.log)")
+                }
+            }
+            else if (config.managed) {
                 server = new MetroServerManager(config.binary, config.map, config.port, config.token)
                 if (server.start()) {
                     emitter = new MetroEmitter(server.eventsUrl, config.token)
@@ -103,6 +115,45 @@ class MetroObserver implements TraceObserverV2 {
             log.warn("nf-metro: initialisation failed (${t.message}); live map disabled.")
             emitter = null
         }
+    }
+
+    /**
+     * Register the run's map on a persistent {@code serve-multi} server and
+     * return its {@code {id, view, events}} reply, or null on any failure
+     * (logged, never thrown).
+     */
+    private static Map registerOnServer(String serverBase, String mapPath, String runName, String token) {
+        try {
+            final mmd = new File(mapPath).getText('UTF-8')
+            String qs = ''
+            if (runName)
+                qs = '?name=' + URLEncoder.encode(runName, 'UTF-8')
+            final conn = (HttpURLConnection) new URL(joinUrl(serverBase, 'maps') + qs).openConnection()
+            conn.requestMethod = 'POST'
+            conn.doOutput = true
+            conn.connectTimeout = 3000
+            conn.readTimeout = 5000
+            conn.setRequestProperty('Content-Type', 'text/plain; charset=utf-8')
+            if (token)
+                conn.setRequestProperty('X-Metro-Token', token)
+            conn.outputStream.write(mmd.getBytes('UTF-8'))
+            conn.outputStream.close()
+            if (conn.responseCode != 200) {
+                log.warn("nf-metro: ${serverBase}/maps returned ${conn.responseCode}")
+                return null
+            }
+            return (Map) new groovy.json.JsonSlurper().parseText(conn.inputStream.getText('UTF-8'))
+        }
+        catch (Throwable t) {
+            log.warn("nf-metro: failed to register map on ${serverBase} (${t.message})")
+            return null
+        }
+    }
+
+    private static String joinUrl(String base, String path) {
+        final b = base.endsWith('/') ? base.substring(0, base.length() - 1) : base
+        final p = path.startsWith('/') ? path : ('/' + path)
+        return b + p
     }
 
     /** Surface a one-line notice on the console (stdout) and in the log. */
